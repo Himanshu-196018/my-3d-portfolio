@@ -19,8 +19,8 @@ export default function RootLayout({
         <main className="bg-slate-300/20">
           <Navbar />
           {children}
-      </main>
-    </body>
+        </main>
+      </body>
     </html>
   );
 }
