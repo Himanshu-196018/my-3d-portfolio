@@ -6,6 +6,7 @@ Source: https://sketchfab.com/3d-models/foxs-islands-163b68e09fcc47618450150be77
 Title: Fox's islands
 */
 
+import * as THREE from "three";
 import { useRef, useEffect } from "react";
 import { a } from "@react-spring/three";
 import { useGLTF } from "@react-three/drei";
@@ -13,12 +14,68 @@ import { useFrame, useThree } from "@react-three/fiber";
 
 const islandScene = "/3d/island.glb";
 
-export default function Island(props: any) {
-  const islandRef = useRef();
+export default function Island({
+  isRotating,
+  setIsRotating,
+  ...props
+}: {
+  isRotating: boolean;
+  setIsRotating: React.Dispatch<React.SetStateAction<boolean>>;
+  props: number[];
+}) {
+  const islandRef = useRef(new THREE.Group());
+  const { gl, viewport } = useThree();
   const { nodes, materials } = useGLTF(islandScene);
 
+  const lastX = useRef(0);
+  const rotationSpeed = useRef(0);
+  const dampingFactor = 0.95;
+
+  const handlePointerDown = (e: any) => {
+    // console.log(e);
+    e.stopPropagation();
+    e.preventDefault();
+    setIsRotating(true);
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    lastX.current = clientX;
+  };
+
+  const handlePointerUp = (e: any) => {
+    // console.log(e);
+    e.stopPropagation();
+    e.preventDefault();
+    setIsRotating(false);
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const delta = (clientX - lastX.current) / viewport.width;
+
+    islandRef.current.rotation.y += delta * 0.01 * Math.PI;
+    lastX.current = clientX;
+    rotationSpeed.current = delta * 0.01 * Math.PI;
+  };
+
+  const handlePointerMove = (e: any) => {
+    // console.log(e);
+    e.stopPropagation();
+    e.preventDefault();
+    if (isRotating) handlePointerUp(e);
+  };
+
+  useEffect(() => {
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("pointerup", handlePointerUp);
+    document.addEventListener("pointermove", handlePointerMove);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointerup", handlePointerUp);
+      document.removeEventListener("pointermove", handlePointerMove);
+    };
+  }, [gl, handlePointerDown, handlePointerMove, handlePointerUp]);
+
   return (
-    <a.group {...props} ref={islandRef}>
+    <a.group ref={islandRef} {...props}>
       <mesh
         geometry={nodes.polySurface944_tree_body_0.geometry}
         material={materials.PaletteMaterial001}
